@@ -1,0 +1,58 @@
+name: Publish npm package
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22.10.0'
+          registry-url: https://npm.pkg.github.com/
+
+      - run: npm install
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+        env:
+          CI: true
+
+      - name: Get package version
+        id: package_version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "Package version: $PACKAGE_VERSION"
+          echo "version=$PACKAGE_VERSION" >> $GITHUB_ENV  # Set package version to the environment
+
+      - name: Get latest published version
+        id: latest_version
+        run: |
+          LATEST_VERSION=$(npm view @bendernnm/mufin-iso4217 version --registry=https://npm.pkg.github.com/)
+          echo "Latest published version: $LATEST_VERSION"
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_ENV  # Set latest version to the environment
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Check if version has changed
+        id: check_version
+        run: |
+          if [ "${{ env.version }}" == "${{ env.latest_version }}" ]; then
+            echo "Version has not changed, exiting."
+            echo "version_changed=false" >> $GITHUB_ENV
+          else
+            echo "version_changed=true" >> $GITHUB_ENV
+          fi
+
+      - run: npm publish --access public
+        if: env.version_changed == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
