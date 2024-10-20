@@ -4,4 +4,4 @@ dotenv.config();
 
 console.log(process.env);
 
-export const a = {};
+export { MonoBankAPI } from './api';
