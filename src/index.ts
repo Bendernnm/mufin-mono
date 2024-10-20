@@ -1,6 +1,7 @@
-const a: number = 2;
-const b: number = 3;
+import * as dotenv from 'dotenv';
 
-const c: number = a + b;
+dotenv.config();
 
-console.log(c);
+console.log(process.env);
+
+export const a = {};
